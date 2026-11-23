@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1e3a5f">
+  <title>Cardiac Data Collection</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f4f8; color: #1a202c; line-height: 1.45; }
+    .hidden { display: none !important; }
+    .screen { min-height: 100vh; }
+    .login-wrap { min-height: 100vh; background: linear-gradient(160deg, #1e3a5f, #2c5282); display: flex; align-items: center; justify-content: center; padding: 1rem; }
+    .box { background: #fff; border-radius: 14px; padding: 1.5rem; width: 100%; max-width: 380px; box-shadow: 0 10px 30px rgba(0,0,0,.2); }
+    .box h1 { font-size: 1.35rem; color: #1e3a5f; text-align: center; margin-bottom: .25rem; }
+    .box p.sub { text-align: center; color: #718096; font-size: .9rem; margin-bottom: 1rem; }
+    input, select, textarea { width: 100%; padding: 12px; margin: 6px 0 10px; border: 1px solid #cbd5e0; border-radius: 8px; font-size: 16px; }
+    textarea { min-height: 70px; resize: vertical; }
+    button { width: 100%; padding: 14px; margin: 6px 0; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; }
+    .btn-blue { background: #3182ce; color: #fff; }
+    .btn-green { background: #38a169; color: #fff; }
+    .btn-gray { background: #e2e8f0; color: #2d3748; }
+    .btn-red { background: #e53e3e; color: #fff; }
+    .btn-outline { background: #fff; border: 1px solid #3182ce; color: #3182ce; }
+    header { background: #1e3a5f; color: #fff; padding: 12px 16px; position: sticky; top: 0; z-index: 50; }
+    header h1 { font-size: 1.15rem; }
+    header .user { font-size: .8rem; opacity: .9; margin-top: 2px; }
+    .content { padding: 12px; max-width: 720px; margin: 0 auto; }
+    .card { background: #fff; border-radius: 10px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    .card h2 { font-size: 1.05rem; margin-bottom: 8px; color: #1e3a5f; }
+    .stat { font-size: .95rem; color: #4a5568; }
+    .nav-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .nav-row button { width: auto; flex: 1 1 140px; padding: 12px; }
+    .section-title { background: #1e3a5f; color: #fff; padding: 8px 12px; border-radius: 8px; margin: 14px 0 10px; font-size: .95rem; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    @media (max-width: 480px) { .row { grid-template-columns: 1fr; } }
+    label { display: block; font-size: .85rem; font-weight: 600; margin-top: 6px; }
+    .checks { display: flex; flex-wrap: wrap; gap: 10px 14px; margin: 6px 0 10px; }
+    .checks label { font-weight: 400; display: flex; align-items: center; gap: 6px; margin: 0; }
+    .patient-item { border-left: 4px solid #3182ce; padding: 10px 12px; margin-bottom: 8px; background: #f7fafc; border-radius: 0 8px 8px 0; }
+    .patient-item h3 { font-size: 1rem; }
+    .patient-item p { font-size: .85rem; color: #718096; }
+    .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .actions button { width: auto; padding: 8px 12px; font-size: .85rem; }
+    .msg { text-align: center; color: #718096; padding: 20px 10px; }
+  </style>
+</head>
+<body>
+  <!-- LOGIN -->
+  <div id="loginScreen" class="screen login-wrap">
+    <div class="box">
+      <h1>Cardiac Data Collection</h1>
+      <p class="sub">Login to continue</p>
+      <input id="loginUser" type="text" placeholder="Username" autocomplete="username">
+      <input id="loginPass" type="password" placeholder="Password" autocomplete="current-password">
+      <button class="btn-blue" onclick="doLogin()">Login</button>
+      <button class="btn-gray" onclick="showReg()">Create Account</button>
+      <button class="btn-green" onclick="enterGuest()">Continue without Account</button>
+    </div>
+  </div>
+
+  <!-- REGISTER -->
+  <div id="regScreen" class="screen login-wrap hidden">
+    <div class="box">
+      <h1>Create Account</h1>
+      <p class="sub">Up to 50 users</p>
+      <input id="regName" type="text" placeholder="Full Name">
+      <input id="regUser" type="text" placeholder="Username">
+      <input id="regPass" type="password" placeholder="Password (min 4)">
+      <button class="btn-blue" onclick="doRegister()">Register</button>
+      <button class="btn-gray" onclick="showLogin()">Back to Login</button>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div id="appScreen" class="screen hidden">
+    <header>
+      <h1>Cardiac Data Collection</h1>
+      <div class="user" id="userLabel">Logged in as: —</div>
+    </header>
+    <div class="content">
+      <div class="nav-row">
+        <button class="btn-blue" onclick="showView('dash')">Dashboard</button>
+        <button class="btn-outline" onclick="showView('patients')">Patients</button>
+        <button class="btn-outline" onclick="showView('cath')">Cath / NORA</button>
+        <button class="btn-outline" onclick="showView('surg')">Surgery</button>
+        <button class="btn-gray" onclick="showView('export')">Export</button>
+        <button class="btn-red" onclick="doLogout()">Logout</button>
+      </div>
+
+      <!-- DASHBOARD -->
+      <div id="view-dash" class="view">
+        <div class="card">
+          <h2>Dashboard</h2>
+          <p class="stat">Patients: <strong id="sPatients">0</strong></p>
+          <p class="stat">Cath Lab / NORA: <strong id="sCath">0</strong></p>
+          <p class="stat">Surgery: <strong id="sSurg">0</strong></p>
+        </div>
+        <div class="card">
+          <h2>Recent Patients</h2>
+          <div id="recentList"></div>
+        </div>
+      </div>
+
+      <!-- PATIENTS -->
+      <div id="view-patients" class="view hidden">
+        <div class="card">
+          <h2>Patients</h2>
+          <button class="btn-blue" onclick="openNewPatient()">+ New Patient</button>
+          <div id="patientList" style="margin-top:12px;"></div>
+        </div>
+      </div>
+
+      <!-- CATH FORM -->
+      <div id="view-cath" class="view hidden">
+        <div class="card">
+          <h2>Cardiac Catheterization Laboratory / NORA</h2>
+          <p style="font-size:.85rem;color:#718096;margin-bottom:10px;">Section A — Retrospective Data Collection</p>
+          <form id="cathForm" onsubmit="saveCath(event)">
+            <div class="row">
+              <div><label>MRN / Record ID *</label><input name="mrn" required></div>
+              <div><label>Procedure Date *</label><input name="procedureDate" type="date" required></div>
+            </div>
+            <div class="row">
+              <div><label>Age</label><input name="age" type="number" min="0"></div>
+              <div><label>Gender</label>
+                <select name="gender"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select>
+              </div>
+            </div>
+            <div class="row">
+              <div><label>Weight (kg)</label><input name="weight" type="number" step="0.1" min="0"></div>
+              <div><label>Collector Name</label><input name="collectorName"></div>
+            </div>
+
+            <div class="section-title">1. Risk Assessment & Anesthesia</div>
+            <label>ASA Physical Status</label>
+            <div class="checks">
+              <label><input type="radio" name="asa" value="I"> I</label>
+              <label><input type="radio" name="asa" value="II"> II</label>
+              <label><input type="radio" name="asa" value="III"> III</label>
+              <label><input type="radio" name="asa" value="IV"> IV</label>
+              <label><input type="radio" name="asa" value="V"> V</label>
+              <label><input type="radio" name="asa" value="E"> E (Emergency)</label>
+            </div>
+            <label>ASA Justification</label>
+            <textarea name="asaJustification"></textarea>
+            <label>Initial Anesthesia Mode</label>
+            <div class="checks">
+              <label><input type="radio" name="anesthesiaMode" value="Sedation"> Sedation</label>
+              <label><input type="radio" name="anesthesiaMode" value="GA"> General Anesthesia (GA)</label>
+            </div>
+            <label>Conversion to GA Required?</label>
+            <div class="checks">
+              <label><input type="radio" name="conversionGA" value="No"> No</label>
+              <label><input type="radio" name="conversionGA" value="Yes"> Yes</label>
+            </div>
+            <input name="conversionReason" placeholder="Indication / Reason if Yes">
+            <label>Sedation Outcome</label>
+            <div class="checks">
+              <label><input type="radio" name="sedationOutcome" value="Successful"> Successful</label>
+              <label><input type="radio" name="sedationOutcome" value="Failed"> Failed / Inadequate</label>
+            </div>
+
+            <div class="section-title">2. Airway, Lines & Pharmacotherapy</div>
+            <label>Airway Adjuncts Used</label>
+            <div class="checks">
+              <label><input type="checkbox" name="airway" value="None"> None</label>
+              <label><input type="checkbox" name="airway" value="Nasal Cannula"> Nasal Cannula</label>
+              <label><input type="checkbox" name="airway" value="Face Mask"> Face Mask</label>
+              <label><input type="checkbox" name="airway" value="LMA"> LMA</label>
+              <label><input type="checkbox" name="airway" value="ETT"> ETT</label>
+            </div>
+            <div class="row">
+              <div><label>ETT Size (if GA)</label><input name="ettSize"></div>
+              <div><label>ETT Type</label><input name="ettType" placeholder="Cuffed / Uncuffed / Armored"></div>
+            </div>
+            <div class="row">
+              <div><label>Venous Access</label><input name="venous"></div>
+              <div><label>Arterial Access</label><input name="arterial"></div>
+            </div>
+            <label>Sedation Agents & Doses</label>
+            <textarea name="sedationAgents" placeholder="Agent(s) / Total Dose"></textarea>
+            <label>Echocardiography</label>
+            <div class="checks">
+              <label><input type="checkbox" name="echo" value="TTE"> TTE</label>
+              <label><input type="checkbox" name="echo" value="TEE"> TEE</label>
+              <label><input type="checkbox" name="echo" value="None"> None</label>
+            </div>
+
+            <div class="section-title">3. Procedure & Outcomes</div>
+            <label>Actual Procedure Performed</label>
+            <textarea name="procedure"></textarea>
+            <div class="row">
+              <div><label>Start Time</label><input name="startTime" type="time"></div>
+              <div><label>End Time</label><input name="endTime" type="time"></div>
+            </div>
+            <label>Total Duration (mins)</label>
+            <input name="totalMins" type="number" min="0">
+            <div class="row">
+              <div><label>CRP Pre (mg/L)</label><input name="crpPre" type="number" step="0.1"></div>
+              <div><label>CRP Post (mg/L)</label><input name="crpPost" type="number" step="0.1"></div>
+            </div>
+            <label>ICU Stay</label>
+            <input name="icuStay" placeholder="Days/Hours or N/A">
+            <label>Hospital Stay (Days)</label>
+            <input name="hospitalStay" type="number" min="0">
+            <label>Mortality Outcome</label>
+            <div class="checks">
+              <label><input type="radio" name="mortality" value="Survived"> Survived to Discharge</label>
+              <label><input type="radio" name="mortality" value="Mortality"> In-Hospital Mortality</label>
+            </div>
+            <label>Additional Notes</label>
+            <textarea name="notes"></textarea>
+
+            <button type="submit" class="btn-blue">Save Cath Lab Record</button>
+            <button type="reset" class="btn-gray">Reset</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- SURGERY FORM -->
+      <div id="view-surg" class="view hidden">
+        <div class="card">
+          <h2>Cardiac Surgery</h2>
+          <p style="font-size:.85rem;color:#718096;margin-bottom:10px;">Section B — Retrospective Data Collection</p>
+          <form id="surgForm" onsubmit="saveSurg(event)">
+            <div class="row">
+              <div><label>MRN / Record ID *</label><input name="mrn" required></div>
+              <div><label>Surgical Date *</label><input name="surgicalDate" type="date" required></div>
+            </div>
+            <div class="row">
+              <div><label>Age</label><input name="age" type="number" min="0"></div>
+              <div><label>Gender</label>
+                <select name="gender"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select>
+              </div>
+            </div>
+            <div class="row">
+              <div><label>Weight (kg)</label><input name="weight" type="number" step="0.1" min="0"></div>
+              <div><label>Collector Name</label><input name="collectorName"></div>
+            </div>
+
+            <div class="section-title">1. Preoperative Risk & Procedure</div>
+            <label>ASA Physical Status</label>
+            <div class="checks">
+              <label><input type="radio" name="asa" value="I"> I</label>
+              <label><input type="radio" name="asa" value="II"> II</label>
+              <label><input type="radio" name="asa" value="III"> III</label>
+              <label><input type="radio" name="asa" value="IV"> IV</label>
+              <label><input type="radio" name="asa" value="V"> V</label>
+              <label><input type="radio" name="asa" value="IVE"> IVE</label>
+              <label><input type="radio" name="asa" value="VE"> VE (Emergency)</label>
+            </div>
+            <label>ASA Justification</label>
+            <textarea name="asaJustification"></textarea>
+            <label>Actual Surgical Procedure</label>
+            <textarea name="procedure"></textarea>
+
+            <div class="section-title">2. Intraoperative Anesthesia & Perfusion</div>
+            <div class="row">
+              <div><label>ETT Size</label><input name="ettSize"></div>
+              <div><label>ETT Type & Securement</label><input name="ettType"></div>
+            </div>
+            <div class="row">
+              <div><label>Regional Type / Block</label><input name="regionalType"></div>
+              <div><label>Local Anesthetic & Dose</label><input name="regionalAnesthetic"></div>
+            </div>
+            <label>Narcotics Total Dose</label>
+            <textarea name="narcotics" placeholder="Fentanyl / Morphine / Remifentanil..."></textarea>
+            <div class="row">
+              <div><label>Dexamethasone (mg)</label><input name="dexamethasone" type="number" step="0.1"></div>
+              <div><label>Methylprednisolone (mg)</label><input name="methylprednisolone" type="number" step="0.1"></div>
+            </div>
+            <div class="row">
+              <div><label>Cardioplegia Type</label><input name="cardioplegiaType"></div>
+              <div><label>Delivery Route</label><input name="cardioplegiaRoute"></div>
+            </div>
+            <label>Cardioplegia Total Vol (mL)</label>
+            <input name="cardioplegiaVol" type="number">
+            <div class="row">
+              <div><label>PRBC (units)</label><input name="prbc" type="number" min="0"></div>
+              <div><label>FFP (units)</label><input name="ffp" type="number" min="0"></div>
+            </div>
+            <div class="row">
+              <div><label>Platelets (units)</label><input name="platelets" type="number" min="0"></div>
+              <div><label>Cryo (units)</label><input name="cryo" type="number" min="0"></div>
+            </div>
+            <div class="row">
+              <div><label>CPB Minutes</label><input name="cpbMinutes" type="number" min="0"></div>
+              <div><label>CPB Start</label><input name="cpbStart" type="time"></div>
+            </div>
+            <label>CPB End</label>
+            <input name="cpbEnd" type="time">
+            <label>Intraoperative Notes</label>
+            <textarea name="intraopNotes"></textarea>
+
+            <div class="section-title">3. Laboratory & Airway / Transfer</div>
+            <div class="row">
+              <div><label>Lactate Last on Bypass</label><input name="lactateBypass" type="number" step="0.1"></div>
+              <div><label>Lactate First in ICU</label><input name="lactateICU" type="number" step="0.1"></div>
+            </div>
+            <div class="row">
+              <div><label>CRP Pre-Op</label><input name="crpPre" type="number" step="0.1"></div>
+              <div><label>CRP Post-Op</label><input name="crpPost" type="number" step="0.1"></div>
+            </div>
+            <label>ICU Transfer Status</label>
+            <div class="checks">
+              <label><input type="radio" name="icuTransfer" value="Intubated"> Intubated</label>
+              <label><input type="radio" name="icuTransfer" value="Extubated"> Extubated in OR</label>
+            </div>
+            <div class="row">
+              <div><label>Extubated By</label><input name="extubatedBy"></div>
+              <div><label>Extubation Time</label><input name="extubationTime"></div>
+            </div>
+            <label>Re-intubation</label>
+            <div class="checks">
+              <label><input type="radio" name="reintubation" value="No"> No</label>
+              <label><input type="radio" name="reintubation" value="Yes"> Yes</label>
+            </div>
+            <div class="row">
+              <div><label>Re-intubation By</label><input name="reintubationBy"></div>
+              <div><label>Cause</label><input name="reintubationCause"></div>
+            </div>
+
+            <div class="section-title">4. Outcomes & Stay</div>
+            <label>ICU Stay</label>
+            <input name="icuStay" placeholder="Hrs / Days">
+            <label>Hospital Stay (Days)</label>
+            <input name="hospitalStay" type="number" min="0">
+            <label>Surviving to Discharge</label>
+            <div class="checks">
+              <label><input type="radio" name="surviving" value="Yes"> Yes</label>
+              <label><input type="radio" name="surviving" value="No"> No</label>
+            </div>
+            <label>In-Hospital Mortality</label>
+            <div class="checks">
+              <label><input type="radio" name="mortality" value="Yes"> Yes</label>
+              <label><input type="radio" name="mortality" value="No"> No</label>
+            </div>
+
+            <div class="section-title">5. Perfusion & Clamp</div>
+            <div class="row">
+              <div><label>Cross Clamp (min)</label><input name="clampMin" type="number" min="0"></div>
+              <div><label>Clamp On</label><input name="clampOn" type="time"></div>
+            </div>
+            <label>Clamp Off</label>
+            <input name="clampOff" type="time">
+            <div class="row">
+              <div><label>Prime Vol (mL)</label><input name="primeVol" type="number"></div>
+              <div><label>Prime Type</label><input name="primeType"></div>
+            </div>
+            <label>Prime Additives</label>
+            <textarea name="primeAdditives"></textarea>
+
+            <button type="submit" class="btn-blue">Save Surgery Record</button>
+            <button type="reset" class="btn-gray">Reset</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- EXPORT -->
+      <div id="view-export" class="view hidden">
+        <div class="card">
+          <h2>Export Data</h2>
+          <p style="font-size:.9rem;color:#718096;margin-bottom:12px;">Data is stored only on this device.</p>
+          <button class="btn-blue" onclick="exportJSON()">Download JSON</button>
+          <button class="btn-gray" onclick="exportCSV('cath')">Download CSV (Cath Lab)</button>
+          <button class="btn-gray" onclick="exportCSV('surg')">Download CSV (Surgery)</button>
+          <button class="btn-red" style="margin-top:12px;" onclick="clearAll()">Clear All Data</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEW PATIENT MODAL (simple) -->
+  <div id="patientModal" class="login-wrap hidden" style="background:rgba(0,0,0,.5);">
+    <div class="box">
+      <h1>New Patient</h1>
+      <input id="npMrn" type="text" placeholder="MRN / Record ID *" required>
+      <input id="npAge" type="number" placeholder="Age">
+      <select id="npGender"><option value="">Gender</option><option>Male</option><option>Female</option><option>Other</option></select>
+      <input id="npWeight" type="number" step="0.1" placeholder="Weight (kg)">
+      <button class="btn-blue" onclick="savePatient()">Save Patient</button>
+      <button class="btn-gray" onclick="closePatientModal()">Cancel</button>
+    </div>
+  </div>
+
+  <script>
+    const DATA_KEY = 'cardiacFullData';
+    const USERS_KEY = 'cardiacFullUsers';
+    let data = loadData();
+    let users = loadUsers();
+
+    function loadData() {
+      try { return JSON.parse(localStorage.getItem(DATA_KEY)) || { patients: [], cath: [], surg: [] }; }
+      catch(e) { return { patients: [], cath: [], surg: [] }; }
+    }
+    function saveData() { localStorage.setItem(DATA_KEY, JSON.stringify(data)); updateStats(); }
+    function loadUsers() {
+      try {
+        const u = JSON.parse(localStorage.getItem(USERS_KEY));
+        if (u && u.length) return u;
+      } catch(e) {}
+      const def = [{ username: 'admin', password: 'admin123', fullName: 'Administrator' }];
+      localStorage.setItem(USERS_KEY, JSON.stringify(def));
+      return def;
+    }
+    function saveUsers() { localStorage.setItem(USERS_KEY, JSON.stringify(users)); }
+    function currentName() { return sessionStorage.getItem('name') || sessionStorage.getItem('user') || 'Unknown'; }
+    function currentUser() { return sessionStorage.getItem('user') || ''; }
+
+    function showLogin() {
+      document.getElementById('loginScreen').classList.remove('hidden');
+      document.getElementById('regScreen').classList.add('hidden');
+      document.getElementById('appScreen').classList.add('hidden');
+    }
+    function showReg() {
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('regScreen').classList.remove('hidden');
+    }
+    function enterApp(name, user) {
+      sessionStorage.setItem('loggedIn', '1');
+      sessionStorage.setItem('user', user || name);
+      sessionStorage.setItem('name', name);
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('regScreen').classList.add('hidden');
+      document.getElementById('appScreen').classList.remove('hidden');
+      document.getElementById('userLabel').textContent = 'Logged in as: ' + name;
+      updateStats();
+      renderPatients();
+      showView('dash');
+    }
+    function doLogin() {
+      const u = document.getElementById('loginUser').value.trim();
+      const p = document.getElementById('loginPass').value;
+      const found = users.find(x => x.username === u && x.password === p);
+      if (found) enterApp(found.fullName, found.username);
+      else alert('Invalid username or password');
+    }
+    function doRegister() {
+      const n = document.getElementById('regName').value.trim();
+      const u = document.getElementById('regUser').value.trim();
+      const p = document.getElementById('regPass').value;
+      if (!n || !u || p.length < 4) return alert('Fill all fields (password min 4)');
+      if (users.length >= 50) return alert('Max 50 users');
+      if (users.some(x => x.username.toLowerCase() === u.toLowerCase())) return alert('Username exists');
+      users.push({ username: u, password: p, fullName: n });
+      saveUsers();
+      alert('Account created. Please login.');
+      showLogin();
+      document.getElementById('loginUser').value = u;
+    }
+    function enterGuest() { enterApp('Guest', 'guest'); }
+    function doLogout() {
+      sessionStorage.clear();
+      showLogin();
+    }
+
+    function showView(name) {
+      ['dash','patients','cath','surg','export'].forEach(v => {
+        document.getElementById('view-' + v).classList.toggle('hidden', v !== name);
+      });
+      if (name === 'patients') renderPatients();
+      if (name === 'dash') updateStats();
+    }
+
+    function updateStats() {
+      document.getElementById('sPatients').textContent = data.patients.length;
+      document.getElementById('sCath').textContent = data.cath.length;
+      document.getElementById('sSurg').textContent = data.surg.length;
+      const recent = document.getElementById('recentList');
+      const list = [...data.patients].sort((a,b) => (b.createdAt||0)-(a.createdAt||0)).slice(0,5);
+      if (!list.length) { recent.innerHTML = '<p class="msg">No patients yet</p>'; return; }
+      recent.innerHTML = list.map(p => `
+        <div class="patient-item">
+          <h3>${p.mrn}</h3>
+          <p>${p.age||'—'} yrs • ${p.gender||'—'} • ${p.weight||'—'} kg</p>
+          <p>Added by: ${p.addedBy||'—'}</p>
+        </div>`).join('');
+    }
+
+    function renderPatients() {
+      const el = document.getElementById('patientList');
+      if (!data.patients.length) { el.innerHTML = '<p class="msg">No patients yet</p>'; return; }
+      el.innerHTML = data.patients.map(p => {
+        const hasC = data.cath.some(r => r.mrn === p.mrn);
+        const hasS = data.surg.some(r => r.mrn === p.mrn);
+        return `<div class="patient-item">
+          <h3>${p.mrn}</h3>
+          <p>${p.age||'—'} yrs • ${p.gender||'—'} • ${p.weight||'—'} kg</p>
+          <p>Cath: ${hasC?'✓':'○'} | Surgery: ${hasS?'✓':'○'} | By: ${p.addedBy||'—'}</p>
+          <div class="actions">
+            <button class="btn-blue" onclick="fillCath('${p.mrn}')">Cath Form</button>
+            <button class="btn-blue" onclick="fillSurg('${p.mrn}')">Surgery Form</button>
+            <button class="btn-gray" onclick="delPatient('${p.id}')">Delete</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function openNewPatient() { document.getElementById('patientModal').classList.remove('hidden'); }
+    function closePatientModal() { document.getElementById('patientModal').classList.add('hidden'); }
+    function savePatient() {
+      const mrn = document.getElementById('npMrn').value.trim();
+      if (!mrn) return alert('MRN required');
+      data.patients.push({
+        id: Date.now().toString(),
+        mrn,
+        age: document.getElementById('npAge').value,
+        gender: document.getElementById('npGender').value,
+        weight: document.getElementById('npWeight').value,
+        addedBy: currentName(),
+        createdAt: Date.now()
+      });
+      saveData();
+      closePatientModal();
+      renderPatients();
+      alert('Patient saved');
+    }
+    function delPatient(id) {
+      if (!confirm('Delete this patient?')) return;
+      data.patients = data.patients.filter(p => p.id !== id);
+      saveData();
+      renderPatients();
+    }
+    function fillCath(mrn) {
+      showView('cath');
+      const f = document.getElementById('cathForm');
+      f.mrn.value = mrn;
+      const p = data.patients.find(x => x.mrn === mrn);
+      if (p) { f.age.value = p.age||''; f.gender.value = p.gender||''; f.weight.value = p.weight||''; }
+    }
+    function fillSurg(mrn) {
+      showView('surg');
+      const f = document.getElementById('surgForm');
+      f.mrn.value = mrn;
+      const p = data.patients.find(x => x.mrn === mrn);
+      if (p) { f.age.value = p.age||''; f.gender.value = p.gender||''; f.weight.value = p.weight||''; }
+    }
+
+    function formToObj(form) {
+      const fd = new FormData(form);
+      const obj = Object.fromEntries(fd.entries());
+      // multi checkbox
+      form.querySelectorAll('input[type=checkbox]').forEach(cb => {
+        if (!obj[cb.name]) obj[cb.name] = [];
+      });
+      form.querySelectorAll('input[type=checkbox]:checked').forEach(cb => {
+        if (!Array.isArray(obj[cb.name])) obj[cb.name] = [];
+        obj[cb.name].push(cb.value);
+      });
+      obj.addedBy = currentName();
+      obj.addedByUsername = currentUser();
+      obj.createdAt = Date.now();
+      return obj;
+    }
+
+    function saveCath(e) {
+      e.preventDefault();
+      const rec = formToObj(e.target);
+      data.cath = data.cath.filter(r => r.mrn !== rec.mrn);
+      data.cath.push(rec);
+      saveData();
+      alert('Cath Lab / NORA record saved');
+      e.target.reset();
+    }
+    function saveSurg(e) {
+      e.preventDefault();
+      const rec = formToObj(e.target);
+      data.surg = data.surg.filter(r => r.mrn !== rec.mrn);
+      data.surg.push(rec);
+      saveData();
+      alert('Surgery record saved');
+      e.target.reset();
+    }
+
+    function exportJSON() {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'cardiac-data-' + new Date().toISOString().slice(0,10) + '.json';
+      a.click();
+    }
+    function exportCSV(type) {
+      const arr = type === 'cath' ? data.cath : data.surg;
+      if (!arr.length) return alert('No records');
+      const keys = Object.keys(arr[0]);
+      const lines = [keys.join(',')].concat(arr.map(r => keys.map(k => {
+        let v = r[k];
+        if (Array.isArray(v)) v = v.join(';');
+        return '"' + String(v ?? '').replace(/"/g, '""') + '"';
+      }).join(',')));
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = type + '-' + new Date().toISOString().slice(0,10) + '.csv';
+      a.click();
+    }
+    function clearAll() {
+      if (!confirm('Delete ALL data on this device?')) return;
+      data = { patients: [], cath: [], surg: [] };
+      saveData();
+      renderPatients();
+      alert('Cleared');
+    }
+
+    // init
+    if (sessionStorage.getItem('loggedIn') === '1') {
+      enterApp(sessionStorage.getItem('name') || 'User', sessionStorage.getItem('user'));
+    } else {
+      showLogin();
+    }
+  </script>
+</body>
+</html>
